@@ -13,6 +13,6 @@ for each sequence a genetitc algorith has been carries out and each step consist
 eratioons on the sequences and calculating their disances and evaluaing their strucural prediction
 confidence as one of the fitness criteria.
 \\
-<img src="Flowchart.jpg" alt="ProteinEvolution" width="300">
+<img src="Flowchart.jpg" alt="ProteinEvolution" width="300" height="200">
 
 
