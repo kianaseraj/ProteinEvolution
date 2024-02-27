@@ -11,8 +11,7 @@ import logging
 import sys
 import time
 
-logging.basicConfig(filename = "evolution-log.txt", level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 
 def create_parser():
@@ -56,13 +55,17 @@ class EvolutionScenario:
       pass
 
 
-    def initiate(self, chain_num : int, num_sequence : int, length:int , dir_path : str ):
+    def initiate(self, chain_num : int, num_sequence : int, length:int , dir_path : str, population_path : str ):
+        logging.basicConfig(filename = f"{population_path}", level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(message)s')
         """
         initilizing the population with randomely generated sequence space
         """
         self.Population.proteins = RandomPopulation.GeneratingPopulation(chain_num, num_sequence, length )
         self.folding_model = Predictor.ESMFold.load(dir_path)
         self.mut_model, self.mut_alphabet = Predictor.ESMmodel.load(dir_path)
+        self.length = length
+        self.chain_num = chain_num
 
 
     def evolve(self, num_steps : int):
@@ -85,12 +88,17 @@ class EvolutionScenario:
             score2 = Fitness.MaximizedGlobularity()
             GlobularityScore = score2.Score(FoldResult)
 
-            score3 = Fitness.Filament()
-            FilamentDimer = score3.Score(FoldResult)
-
             fitness = Fitness.TotalFitness()
-            OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore, FilamentDimer)
+          
+            if self.chain_num >= 2:
+              score3 = Fitness.Filament()
+              FilamentDimer = score3.Score(FoldResult)
+              OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore, FilamentDimer)
 
+            else:
+              OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore)
+
+              
             #stage3 : selection based on the highest general structural scores
             selecting = Select()
             MatingPool = selecting.KeepFittest(OptimizationFitness)
