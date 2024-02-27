@@ -57,12 +57,18 @@ class EvolutionScenario:
 
 
     def initiate(self, chain_num : int, num_sequence : int, length:int , dir_path : str ):
+        """
+        initilizing the population with randomely generated sequence space
+        """
         self.Population.proteins = RandomPopulation.GeneratingPopulation(chain_num, num_sequence, length )
         self.folding_model = Predictor.ESMFold.load(dir_path)
         self.mut_model, self.mut_alphabet = Predictor.ESMmodel.load(dir_path)
 
 
     def evolve(self, num_steps : int):
+       """
+       using the defined modules consectively to optimize the protein population
+       """
         assert self.Population.proteins is not None
         
         
