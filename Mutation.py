@@ -7,24 +7,27 @@ import esm
 from dataclasses import dataclass
 
 
-class Substitution(ABC):
+class Mutation(ABC):
     def __init__(self):
         pass
     @abstractmethod
-    def mutate(self, Individuals : Children) -> List[str]:
+    def mutate(self, Individuals) -> List[str]:
         pass
 
-class MaskedMutation(Substitution):
+class MaskedSubstitution(Mutation):
 
     def __init__(self):
         super().__init__()
-        
-    def mutate(self, Individuals : Children) -> List[str]:
+
+    def mutate(self, Individuals) -> List[str]:
 
        def masking(seq, plddt):
+          """
+          Substituing masked amino acid wrt 5 most probable amino acids predicted with ESM2
+          """
           batch_converter = mut_alphabet.get_batch_converter()
-          data = [("seq", seq)] 
-          batch_labels, batch_strs, batch_tokens = batch_converter(data)   
+          data = [("seq", seq)]
+          batch_labels, batch_strs, batch_tokens = batch_converter(data)
           index = np.argsort(plddt)
           masked_position = index[0:int(0.03 * len(index))]
           batch_tokens[0][masked_position] = mut_alphabet.mask_idx
@@ -47,14 +50,43 @@ class MaskedMutation(Substitution):
           substituted_sequence = ''.join(substitution_map.get(old_index, seq[old_index]) for old_index in range(len(seq)))
           return substituted_sequence
 
+       def insertion(seq):
+          """
+           Inserting randomely a domain in a seq
+          """
+          domain_length = length - len(seq)
+          insertion_position = random.randint(0, len(seq))
+
+          def GeneratingDomain(length:int, amino_acid = ["A", "C", "G", "T", "S", "D", "L", "N", "Q", "P", "F", "V", "Y", "W", "I", "H", "E", "R", "K", "M"]) -> List[str]:
+              """
+              generating the random domain to be inserted
+              """
+              sequence_produced = ""
+              for k in range(length):
+                  # no more than three consecutive amino acid repeats
+                  if k < 3 or sequence_produced[k-3:k] != sequence_produced[k-2:k+1]:
+                      amino = np.random.choice(amino_acid)
+                  sequence_produced += amino
+              return sequence_produced
+
+          mutated_seq = seq[:insertion_position] + GeneratingDomain(domain_length) + seq[insertion_position:]
+          return mutated_seq
+
        MutatedChildren = []
        for i in range(len(Individuals.offspring_pop)):
           seq = Individuals.offspring_pop["sequence"][i]
           plddt = Individuals.offspring_pop["plddt"][i]
-          MutatedChildren.append(masking(seq, plddt))
-          complex = []
-          for seq in MutatedChildren:
-            seqs = ":".join([seq]*chain_num)
-            complex.append(seqs)
-          return(complex)
-       return MutatedChildren 
+          seq = masking(seq, plddt)
+
+          if len(seq)<length:
+              mutated_seq = insertion(seq)
+          else:
+              mutated_seq = seq
+
+          mutated_seqs = ":".join([mutated_seq]*2)
+          MutatedChildren.append(mutated_seqs)
+
+       return MutatedChildren
+
+       
+       
