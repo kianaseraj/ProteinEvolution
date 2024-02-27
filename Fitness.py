@@ -42,15 +42,17 @@ class FoldingFitness(Fitness):
         
 
     def Score(self, foldingresult: FoldResult) -> StructureScore:
-            
+        """
+        Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear sum of mean plddt, mean pae, and ptm scores.
+        """   
         assert FoldResult is not None
         FoldingScore_df = pd.DataFrame()
         FoldingScore_df["sequence"] = foldingresult.ptm_df["sequence"]   
-        FoldingScore_df["GeneralScore"] = foldingresult.mean_plddt_df["mean_plddt"] + foldingresult.ptm_df["ptm"]*100 + -1*foldingresult.pae_df.apply(lambda row: np.mean(row["pae"]), axis=1) 
         FoldingScore_df["plddt"] = foldingresult.plddt_df["plddt"]
         FoldingScore_df["ptm"] = foldingresult.ptm_df["ptm"]*100
         FoldingScore_df["pae"] = foldingresult.pae_df["pae"]
         FoldingScore_df["mean_plddt"] = foldingresult.mean_plddt_df['mean_plddt']
+        FoldingScore_df["GeneralScore"] = foldingresult.mean_plddt_df["mean_plddt"] + foldingresult.ptm_df["ptm"]*100 + -1*foldingresult.pae_df.apply(lambda row: np.mean(row["pae"]), axis=1) 
        
         return StructureScore(FoldingScore_df)
     
@@ -136,7 +138,7 @@ class Filament(Fitness):
 
   #translational movement of monomers
   #being centered in the origin 
-  #having small std, globularity
+
 
   def Score(self, foldingresult : FoldResult) -> FilamentDimer:
 
@@ -183,7 +185,7 @@ class TotalFitness(Fitness):
     def Score(self, foldingresult : FoldResult) -> StructureScore:
         pass
 
-    #TODO: badan bia in *scores ro dorost kon felan ba do ta general va globularity pish bebar
+
     def FitnessScore(self, fold_score = StructureScore, globularity_score = GlobularityScore, filament_score = FilamentDimer ) -> OptimizationFitness:
         #currently coefficient weights of 1 and 2 for folding and globularity are defined.
         
@@ -206,7 +208,7 @@ class TotalFitness(Fitness):
 
            OptimizationFitness_df["sequence"] = OptimizationFitness_df["sequence"].str.split(':').str.get(0)[0]
    
-           # Apply downsampling using apply
+          
            df_downsampled = OptimizationFitness_df.apply(downsample_data, axis=1)
            OptimizationFitness_df["pae"] = df_downsampled["pae"]
            OptimizationFitness_df["plddt"] = df_downsampled["plddt"]
