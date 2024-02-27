@@ -9,6 +9,6 @@ their backbones without considering their sequence or generating new sequences w
 However, none of them generatted both sequences and backbones simultaneously.
 for each sequence a genetitc algorith has been carries out and each step consists of applying crossover and mutation operations on the sequences and calculating their disances and evaluaing their strucural predictionconfidence as one of the fitness criteria.<br>
 
-<img src="Flowchart.jpg" alt="ProteinEvolution" width="300" height="400">
-
-
+<p align="center">
+  <img src="Flowchart.jpg" alt="ProteinEvolution" width="300" height="500">
+</p>
