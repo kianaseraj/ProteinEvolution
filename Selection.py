@@ -20,7 +20,7 @@ class selection(ABC):
 class Select(selection):
     def __init__(self):
         super().__init__()
-     #choosing the population having longer seq than the threshold    
+      
     def KeepFittest(self, score : OptimizationFitness) -> MatingPool:
         #Creating the mating pool composed of 50% of the population having high general fit scores!
       
@@ -32,8 +32,7 @@ class Select(selection):
             if len(df["sequence"][i]) >= seq_length:
                 fittest_pop = pd.concat([fittest_pop, df.iloc[i:i+1]], ignore_index=True)
         fittest_pop = fittest_pop.head(int(0.5*len(df)))
-        #test if the matingpool has the required size:
-
+    
 
         #shuffling the population
         fittest_pop = fittest_pop.sample(frac = 1)
