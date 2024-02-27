@@ -19,7 +19,9 @@ class RandomPopulation(ProteinSequenes):
 
 
     def GeneratingPopulation(self, chain_num : int, sequence_num : int, length:int, amino_acid = ["A", "C", "G", "T", "S", "D", "L", "N", "Q", "P", "F", "V", "Y", "W", "I", "H", "E", "R", "K", "M"]) -> List[str]:
-        
+        """
+        Generating randomly population of protein sequences having 80% residue similarity
+        """
         def mutation(seq, amino_acid = ["A", "C", "G", "T", "S", "D", "L", "N", "Q", "P", "F", "V", "Y", "W", "I", "H", "E", "R", "K", "M"]) -> List[str]:
             
 
