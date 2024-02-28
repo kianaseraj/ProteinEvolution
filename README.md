@@ -6,5 +6,5 @@ There has been numerous progress in protein structure prediction using language 
 <br>
 
 <p align="center">
-  <img src="Flowchart.jpg" alt="ProteinEvolution" width="500" height="400">
+  <img src="Flowchart.jpg" alt="ProteinEvolution" width="400" height="400">
 </p>
