@@ -70,7 +70,7 @@ class EvolutionScenario:
 
     def evolve(self, num_steps : int):
        """
-       using the defined modules consectively to optimize the protein population
+       using the defined modules to optimize the protein population
        """
         assert self.Population.proteins is not None
         
