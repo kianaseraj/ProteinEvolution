@@ -50,7 +50,7 @@ class MaskedSubstitution(Mutation):
           substituted_sequence = ''.join(substitution_map.get(old_index, seq[old_index]) for old_index in range(len(seq)))
           return substituted_sequence
 
-       def insertion(seq):
+       def insertion(seq, length):
           """
            Inserting randomely a domain in a seq
           """
