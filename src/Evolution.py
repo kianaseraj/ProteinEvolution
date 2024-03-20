@@ -54,7 +54,7 @@ class EvolutionScenario:
     def __init__(self ):
       pass
 
-
+    @classmethod
     def initiate(self, chain_num : int, num_sequence : int, length:int , dir_path : str, population_path : str ):
         logging.basicConfig(filename = f"{population_path}", level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
@@ -67,7 +67,7 @@ class EvolutionScenario:
         self.length = length
         self.chain_num = chain_num
 
-
+    @classmethod
     def evolve(self, num_steps : int):
        """
        using the defined modules to optimize the protein population
