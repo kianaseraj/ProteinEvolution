@@ -61,7 +61,7 @@ class EvolutionScenario:
         """
         initilizing the population with randomely generated sequence space
         """
-        self.Population.proteins = RandomPopulation.GeneratingPopulation(chain_num, num_sequence, length )
+        self.proteins = RandomPopulation.GeneratingPopulation(chain_num, num_sequence, length )
         self.folding_model = Predictor.ESMFold.load(dir_path)
         self.mut_model, self.mut_alphabet = Predictor.ESMmodel.load(dir_path)
         self.length = length
@@ -72,14 +72,14 @@ class EvolutionScenario:
        """
        using the defined modules to optimize the protein population
        """
-        assert self.Population.proteins is not None
+        assert self.proteins is not None
         
         
-        i = self.Population.proteins  
+        population = self.proteins  
         for j in tqdm(range(1, num_steps + 1), desc="Generating population", unit="population"):
             
             #stage1 : Measuring folding scores for the sequences
-            FoldResult = self.folding_model.fold(i)
+            FoldResult = self.folding_model.fold(population)
 
             #stage2 : Calculating structure fitness score 
             score1 = Fitness.FoldingFitness()
@@ -110,7 +110,7 @@ class EvolutionScenario:
             #stage5 : Mutation with masked rediction
             mutating = MaskedMutation()
             MutatedChildren = mutating.mutate(Children)
-            i = MutatedChildren
+            population = MutatedChildren
             # 
             df = MatingPool.fittest_pop
             sorted_df = (df.sort_values(by='mean_plddt', ascending=False)).head(10)
