@@ -59,8 +59,6 @@ class ESMFold(Predictor):
         mean_plddt_ = []
         atoms_ = []
         for sequence in Population:
-            def pdb_file_to_atomarray(pdb_path : Union[str, StringIO]) -> AtomArray:
-                return PDBFile.read(pdb_path).get_structure(model = 1)
             with torch.no_grad():
                 output = self.model.infer(sequence, chain_linker="X"*0, residue_index_offset=0)
 
