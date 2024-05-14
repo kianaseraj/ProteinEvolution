@@ -4,18 +4,16 @@ from Fitness import Fitness
 from Selection import Select
 from Breeding import DomainCrossover
 from Mutation import MaskedMutation
-import constants
 from tqdm import tqdm
 import argparse
 import logging
-import sys
-import time
+
 
 
 
 
 def create_parser():
-    parser = argparse.ArgumentParser(description = "Generate protein population")
+    parser = argparse.ArgumentParser(description = "Generating protein population")
     
     parser.add_argument("num_steps", 
                         type = int, 
@@ -31,7 +29,7 @@ def create_parser():
                         )
     parser.add_argument("chain_num", 
                         type = int, 
-                        help = "setting the number of chains"
+                        help = "setting the number of sequence chains"
                         )
     parser.add_argument("dir_path", 
                         type = str, 
@@ -39,25 +37,17 @@ def create_parser():
                         )
     parser.add_argument("population_path", 
                         type = str, 
-                        help = "Path where you want the population be saved"
-                        )
-    parser.add_argument("model_type", 
-                        type = str,
-                        required = True, 
-                        help = "choosing the pre_trained model "
+                        help = "choosing a path for saving the generated population"
                         )
     return parser
     
     
 class EvolutionScenario:
 
-    def __init__(self ):
-      pass
-
-    @classmethod
-    def initiate(cls, chain_num : int, num_sequence : int, length:int , dir_path : str, population_path : str ):
-        logging.basicConfig(filename = f"{population_path}", level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(message)s')
+  
+    def __init__(self, chain_num: int, num_sequence: int, length: int , dir_path: str, population_path: str ):
+        
+        logging.basicConfig(filename = f"{population_path}", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         """
         initilizing the population with randomely generated sequence space
         """
@@ -67,11 +57,10 @@ class EvolutionScenario:
         self.length = length
         self.chain_num = chain_num
 
-    @classmethod
-    def evolve(cls, num_steps : int):
-       """
-       using the defined modules to optimize the protein population
-       """
+    def evolve(self, num_steps : int):
+        """
+        using the defined modules to optimize the protein population
+        """
         assert self.proteins is not None
         
         
@@ -119,22 +108,11 @@ class EvolutionScenario:
 
 
 
-def main(args):
-    if args.model_type not in constants.esm_model_types:
-        print("The pre trained models are:")
-        print(*constants.esm_model_types, sep = "\n")
-        sys.exit(2)
-
-start_time = time.time()
-
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-    main(args)
-    EvolutionScenario.initiate(args.chain_num, args.num_sequence, args.length, args.dir_path)
-    EvolutionScenario.evolve(args.num_steps)
-
-    print("--- %s seconds ---" % (time.time() - start_time))
+    evolution_scenario = EvolutionScenario(args.chain_num, args.num_sequence, args.length, args.dir_path, args.population_path)
+    evolution_scenario.evolve(args.num_steps)
 
 
 
