@@ -11,6 +11,13 @@ import pandas as pd
 from io import StringIO
 from biotite.structure.io.pdb import PDBFile
 
+
+
+"""
+Second stage of the algorithm.
+The randomely generated population will be given plddt, pae, and ptm scores. 
+The folding score results will be in pandas dataframe format.
+"""
 @dataclass
 class FoldResult:
     ptm_df : pd.DataFrame
@@ -32,6 +39,10 @@ class Predictor(ABC):
         pass
 
 
+def pdb_file_to_atomarray(pdb_path = Union[str,StringIO]) -> AtomArray:
+    return PDBFile.read(pdb_path).get_structure(model = 1)
+
+
 class ESMFold(Predictor):
     def __init__(self) -> None:
         super().__init__()
@@ -47,12 +58,9 @@ class ESMFold(Predictor):
         return self.model
 
     def fold(self, Population : List[str]) -> FoldResult:
+        
         assert self.model is not None
-
-        def pdb_file_to_atomarray(pdb_path = Union[str,StringIO]) -> AtomArray:
-            return PDBFile.read(pdb_path).get_structure(model = 1)
-
-
+        
         ptm_ =[]
         plddt_ =[]
         pae_ = []
