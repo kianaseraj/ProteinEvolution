@@ -5,6 +5,11 @@ import pandas as pd
 from dataclasses import dataclass
 from Fitness import OptimizationFitness
 
+
+"""
+Fourth stage of algorithm.
+The scored population will be evaluated and the population with the highest score will be chosen as the parent population.
+"""
 @dataclass
 class MatingPool:
     fittest_pop : pd.DataFrame
