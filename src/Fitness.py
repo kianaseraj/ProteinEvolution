@@ -4,7 +4,19 @@ import pandas as pd
 import numpy as np
 from biotite.structure import AtomArray
 from sklearn.preprocessing import MinMaxScaler
+from Folding import FoldResult
 
+
+
+"""
+Third stage of the algorithm.
+Various fitness classes such as globularity, folding and filament have been defiend.
+The defined fitness scores drive the population towards desired structural and functional properties over successive generations.
+
+Each individual sequence in the population is evaluated using these fitness criteria.
+A total fitness score is calculated for each sequence, which determines its survival
+probability in the subsequent evolution process.
+"""
 @dataclass
 class StructureScore:
     FoldingScore_df : pd.DataFrame
@@ -86,7 +98,7 @@ def distance_to_centroid(coordinates : np.ndarray) -> np.ndarray:
 
 class MaximizedGlobularity(Fitness):
     """
-Calculating the std of the backbone distances from the center of mass,
+Calculating the std of the residue backbones from the center of mass,
 lower std indicates a more compact and globular structure.
     """
 
@@ -136,12 +148,14 @@ class Filament(Fitness):
   def __init__(self) -> None:
     super().__init__()
 
-  #translational movement of monomers
-  #being centered in the origin 
+
 
 
   def Score(self, foldingresult : FoldResult) -> FilamentDimer:
-
+    """
+    The multimers should have translational symmetry for each chain.
+    The distance between consecutive chains' center of mass must be equal to their residue backbone distances.
+    """
     translational_sym = []
     for i in range(len(foldingresult.atoms_df)):
     #translational symmetry
@@ -156,7 +170,7 @@ class Filament(Fitness):
 
       backbone_diff = (np.abs(backbone2 - backbone1))
 
-      #com distance:
+      #center of mass distance:
       center_of_mass1 = get_center_of_mass(backbone1)
       center_of_mass2 = get_center_of_mass(backbone2)
       com_diff = np.abs(center_of_mass2 - center_of_mass1)
@@ -173,8 +187,17 @@ class Filament(Fitness):
     pass
 
 
+def downsample_data(row):
+    seq_length = len(row["sequence"])
+    row['plddt'] = row['plddt'][:seq_length]
+    row["pae"] = row["pae"][0][:seq_length, :seq_length]
+    return row
+
 class TotalFitness(Fitness):
 
+    """
+    The defined fitness score classes will be given weights based on the favored importance and then they will be summed together.
+    """
     def __init__(self) -> None:
         super().__init__()
         self.StructureScore = None
@@ -187,7 +210,7 @@ class TotalFitness(Fitness):
 
 
     def FitnessScore(self, fold_score = StructureScore, globularity_score = GlobularityScore, filament_score = FilamentDimer ) -> OptimizationFitness:
-        #currently coefficient weights of 1 and 2 for folding and globularity are defined.
+        #Weights of 1 and 2 respectively for folding and globularity scores are defined.
         
         OptimizationFitness_df = pd.DataFrame()
         OptimizationFitness_df["sequence"] = fold_score.FoldingScore_df["sequence"]
@@ -196,23 +219,14 @@ class TotalFitness(Fitness):
         OptimizationFitness_df["pae"] = fold_score.FoldingScore_df["pae"]
         OptimizationFitness_df["mean_plddt"] = fold_score.FoldingScore_df['mean_plddt']
 
-        #In the case of filaments keeping the first monomer for the rest of optimization!
+        #In the case of filaments as the chains are similar, for simplicity, all chains will be treated equally and will get equal fitness scores
         if ":" in OptimizationFitness_df["sequence"][0]:
-        
-           def downsample_data(row):
-             seq_length = len(row["sequence"])
-             row['plddt'] = row['plddt'][:seq_length]
-             row["pae"] = row["pae"][0][:seq_length, :seq_length]
-             return row
-
 
            OptimizationFitness_df["sequence"] = OptimizationFitness_df["sequence"].str.split(':').str.get(0)[0]
-   
-          
+
            df_downsampled = OptimizationFitness_df.apply(downsample_data, axis=1)
            OptimizationFitness_df["pae"] = df_downsampled["pae"]
            OptimizationFitness_df["plddt"] = df_downsampled["plddt"]
-
            OptimizationFitness_df["FitnessScore"] = ((fold_score.FoldingScore_df["GeneralScore"])/100) + (2 * 1/((filament_score.translational_sym_df["TranslationalSummetry"]) + ((np.e) ** -6)))+( 2 * 1/((globularity_score.Globularity_df["distance_to_centroid"]) + ((np.e) ** -6)))
         
         else:
