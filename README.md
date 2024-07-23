@@ -7,6 +7,9 @@ The simulation initiates with a population of randomly generated protein sequenc
 
 Optimizing from randomly generated proteins with a 20\% dissimilarity in residues yields a population with high mean pLDDT scores. This emphasizes that the ESM model, initially trained on natural proteins, can effectively hallucinate sequences and their backbones with high confidence. This suggests a promising potential for utilizing the model in generating de novo proteins that differ from natural ones.
 
+
+
+
 <br>
 
 <p align="center">
