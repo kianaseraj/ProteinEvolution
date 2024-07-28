@@ -12,3 +12,27 @@ Optimizing from randomly generated proteins with a 20\% dissimilarity in residue
 <p align="center">
   <img src="flowchart.jpg" alt="ProteinEvolution" width="380" height="500">
 </p>
+
+
+### Getting started
+Firstly, PyTorch must have been installed.
+Secondly, to work with ESM and ESMFold, make sure to to have an environment with python <= 3.9 then follow the below installations:
+
+```bash
+pip install fair-esm  # latest release, OR:
+pip install git+https://github.com/facebookresearch/esm.git  # bleeding edge, current repo main branch
+```
+
+```bash
+pip install "fair-esm[esmfold]"
+# OpenFold and its remaining dependency
+pip install 'dllogger @ git+https://github.com/NVIDIA/dllogger.git'
+pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
+```
+
+**NOTE**: check that `nvcc` is available and that a cuda-compatable version of PyTorch has been installed.
+
+To generate the protein population with the desired properties; here is an example command to run the script with sample arguments:
+```bash
+python3 Evolution.py 100 200 50 2 /path/to/save/model /path/to/output/population
+```
