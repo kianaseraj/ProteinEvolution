@@ -10,5 +10,5 @@ Optimizing from randomly generated proteins with a 20\% dissimilarity in residue
 <br>
 
 <p align="center">
-  <img src="flowchart.jpg" alt="ProteinEvolution" width="300" height="500">
+  <img src="flowchart.jpg" alt="ProteinEvolution" width="380" height="500">
 </p>
