@@ -5,7 +5,7 @@ sys.path.insert(0, "/Users/kianaseraj/desktop/github-kianaseraj/ProteinEvolution
 import Individual
 #testing the individual module
 
-def test_sequence_similarity(self, random_population):
+def test_sequence_similarity(random_population):
         chain_num = 1
         sequence_num = 10
         length = 100
@@ -17,7 +17,7 @@ def test_sequence_similarity(self, random_population):
                 similarity = sum(a == b for a, b in zip(result[i], result[j])) / length
                 assert 0.7 <= similarity <= 0.9  # allowing some flexibility
 
-def test_no_triple_repeats(self, random_population):
+def test_no_triple_repeats(random_population):
         chain_num = 1
         sequence_num = 10
         length = 50
