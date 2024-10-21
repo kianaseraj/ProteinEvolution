@@ -1,23 +1,22 @@
 import numpy as np
 from typing import List
-from abc import ABC, abstractmethod
 from utils import amino_acid
 
-#First stage: Generating protein sequences randomly with 80% residue similarity.
 
-def mutation(seq, length) -> str:
-  index = np.random.choice(range(length-1), int(0.2*length), replace=False)
-  aa = np.random.choice(amino_acid, int(0.2*length), replace = True )
-  seq = list(seq)
-  for i, j in enumerate(index):
-    seq[j] = aa[i]
-  seq = "".join(seq)
+def mutation(seq:str, length:int) -> str:
+  num_mutations = int(0.2 * length) # Calculate the number of mutations needed for 80% similarity
+  indices = np.random.choice(range(length), num_mutations, replace=False) # Randomly select indices to mutate
+  seq_list = list(seq) # Convert sequence to a list for mutation
+  for index in indices:
+    original_aa = seq[index]
+    possible_mutations = [aa for aa in amino_acid if aa != original_aa]
+    seq_list[index] = np.random.choice(possible_mutations)
+  seq = "".join(seq_list) # Convert list back to string
   return seq
 
 
+#First stage: Generating protein sequences randomly with 80% residue similarity.
 def GeneratingPopulation(chain_num : int, sequence_num : int, length:int) -> List[str]:
-
-
   sequence_produced = ""
   for k in range(length):
       # no more than three consecutive amino acid repeats
@@ -26,7 +25,7 @@ def GeneratingPopulation(chain_num : int, sequence_num : int, length:int) -> Lis
           sequence_produced += amino
 
   proteins = []
-  for l in range(sequence_num):
+  for _ in range(sequence_num):
       mutated_seq = mutation(sequence_produced, length)
       proteins.append(mutated_seq)
 
@@ -40,5 +39,3 @@ def GeneratingPopulation(chain_num : int, sequence_num : int, length:int) -> Lis
       complex.append(seqs)
     return(complex)
         
-
-
