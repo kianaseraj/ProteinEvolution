@@ -7,11 +7,11 @@ from Fitness import OptimizationFitness
 
 
 """
-Fourth stage of algorithm.
-The scored population will be evaluated and the population with the highest score will be chosen as the parent population.
+Fourth stage of the algorithm.
+The fitness score of the population from Fitness module will be evaluated and the population having highest scores will be chosen as the parent population.
 """
 @dataclass
-class MatingPool:
+class MatingPool: #The final population selected based on highest scores for mating.
     fittest_pop : pd.DataFrame
 
 class selection(ABC):
@@ -19,26 +19,25 @@ class selection(ABC):
         pass
 
     @abstractmethod
-    def KeepFittest(self, score) -> pd.DataFrame:
+    def KeepFittest(self, score, length_threshold) -> pd.DataFrame:
         pass
 
 class Select(selection):
     def __init__(self):
         super().__init__()
       
-    def KeepFittest(self, score : OptimizationFitness) -> MatingPool:
+    def KeepFittest(self, score:OptimizationFitness, length_threshold:int) -> MatingPool:
         #Creating the mating pool composed of 50% of the population having high general fit scores!
       
         parent = score.OptimizationFitness_df
         df = parent.sort_values(by = "FitnessScore", ascending = False)
         fittest_pop = pd.DataFrame()
+        #Condititoning the method to only select the sequences longer than a threshold
         for i in range(len(df)):
-            
-            if len(df["sequence"][i]) >= seq_length:
+            if len(df["sequence"][i]) >= length_threshold:
                 fittest_pop = pd.concat([fittest_pop, df.iloc[i:i+1]], ignore_index=True)
         fittest_pop = fittest_pop.head(int(0.5*len(df)))
     
-
         #shuffling the population
         fittest_pop = fittest_pop.sample(frac = 1)
         fittest_pop = fittest_pop.reset_index(drop = True)
