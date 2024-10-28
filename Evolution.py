@@ -9,9 +9,6 @@ import argparse
 import logging
 
 
-
-
-
 def create_parser():
     parser = argparse.ArgumentParser(description = "Generating protein population")
     
@@ -45,28 +42,21 @@ def create_parser():
 class EvolutionScenario:
 
 
-
-    """
-    The class simulates the protein evolution.
-    """
-
-
-  
     def __init__(self, chain_num: int, num_sequence: int, length: int , dir_path: str, population_path: str ):
         
-        """
-        parameters
-        chain_num : number of chains in a protein.
-        num_sequence : number of protein sequences in a population.
-        length : length of a protein sequence.
-        dir_path : path to load the model.
-        population_path : path to save the output population.
+        """simulates the protein evolution.
+        Arguments:
+          - chain_num : number of chains in a protein.
+          - num_sequence : number of protein sequences in a population.
+          - length : length of a protein sequence.
+          - dir_path : path to load the model.
+          - population_path : path to save the output population.
         """
         
         logging.basicConfig(filename = f"{population_path}", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         
         #stage1: initializing the input population with randomely generated sequences.
-        self.proteins = RandomPopulation.GeneratingPopulation(chain_num, num_sequence, length )
+        self.proteins = GeneratingPopulation(chain_num, num_sequence, length)
         self.folding_model = Predictor.ESMFold.load(dir_path)
         self.mut_model, self.mut_alphabet = Predictor.ESMmodel.load(dir_path)
         self.length = length
@@ -75,8 +65,9 @@ class EvolutionScenario:
     def evolve(self, num_steps : int):
       
         """
-        parameter
-        num_steps : number of iterations.
+        Arguments:
+          - num_steps : number of iterations.
+        Returns: Hallucinated protein sequences with their structural confidence scores
         """      
         assert self.proteins is not None
         
@@ -87,11 +78,11 @@ class EvolutionScenario:
             #stage2 : Measuring folding scores of the sequences with Esmfold
             FoldResult = self.folding_model.fold(population)
 
-            #stage3 : Calculating the structure confidence score 
-            score1 = Fitness.FoldingFitness()
+            #stage3 : Calculating the structural confidence score of sequences.
+            score1 = Fitness.FoldingFitness() 
             StructureScore = score1.Score(FoldResult)
 
-            score2 = Fitness.MaximizedGlobularity()
+            score2 = Fitness.MaximizedGlobularity() 
             GlobularityScore = score2.Score(FoldResult)
 
             fitness = Fitness.TotalFitness()
@@ -105,24 +96,22 @@ class EvolutionScenario:
               OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore)
 
               
-            #stage4 : selection based on the highest general structural scores
+            #stage4 : Selection operation; sequences having high general structural scores will be selected.
             selecting = Select()
             MatingPool = selecting.KeepFittest(OptimizationFitness)
 
-            #stage5 : domain-based breeding
+            #stage5 : domain-based breeding; The crossover happens between domains of each sequence pair.
             breed = DomainCrossover()
             Children = breed.crossover(MatingPool)
 
-            #stage5 : Mutation with the masked prediction task
+            #stage5 : Mutation with the masked prediction task; 3% of the amino acids of a sequence having the lowest plddt values will be covered and substituted with residues pedicted by ESM model to have high logit values
             mutating = MaskedMutation(self.mut_model, self.mut_alphabet, self.length)
             MutatedChildren = mutating.mutate(Children)
-            population = MutatedChildren
-            # 
-            df = MatingPool.fittest_pop
-            sorted_df = (df.sort_values(by='mean_plddt', ascending=False)).head(10)
-            iter_data = { "step" : j, "seq" : sorted_df["sequences"].values, "mean_plddt" : sorted_df["mean_plddt"].values, "iteration_mean" :  df["mean_plddt"].mean(), "var" : df["mean_plddt"].var()}
+            population = MutatedChildren #The final population, and the input for the subsequent iteration
+            #Logging 10 sequences of the fittest population having the highest mean plddt scores
+            sorted_df = (MatingPool.fittest_pop.sort_values(by='mean_plddt', ascending=False)).head(10)
+            iter_data = { "step" : j, "sequence" : sorted_df["sequences"].values, "mean_plddt" : sorted_df["mean_plddt"].values, "iteration_mean" :  df["mean_plddt"].mean(), "var" : df["mean_plddt"].var()}
             logging.info(iter_data)
-
 
 
 if __name__ == "__main__":
