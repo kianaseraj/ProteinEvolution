@@ -10,8 +10,8 @@ from Folding import FoldResult
 
 """
 Third stage of the algorithm.
-Various fitness classes such as globularity, folding and filament have been defiend.
-The defined fitness scores drive the population towards desired structural and functional properties over successive generations.
+Various fitness classes such as globularity, folding and filament have been defiend using the obtained structural scores from Folding module.
+The defined fitness scores drive the population towards desired structural properties over successive generations.
 
 Each individual sequence in the population is evaluated using these fitness criteria.
 A total fitness score is calculated for each sequence, which determines its survival
@@ -54,8 +54,10 @@ class FoldingFitness(Fitness):
         
 
     def Score(self, foldingresult: FoldResult) -> StructureScore:
-        """
-        Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear sum of mean plddt, mean pae, and ptm scores.
+        """Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear weighted sum of mean plddt, mean pae, and ptm scores.
+        Arguments: 
+        - foldingresult : The strucural scores obtained by ESMFold by Folding module
+        Returns: A dataframe of protein sequences with their fitness scores
         """   
         assert FoldResult is not None
         FoldingScore_df = pd.DataFrame()
@@ -77,38 +79,50 @@ def _is_Nx3(array : np.ndarray) -> bool:
     return len(array.shape) == 2 and array.shape[1] == 3
     
 def get_center_of_mass(coordinates : np.ndarray) -> np.ndarray:
+    """Calculate the center of mass of coordinates in each dimension.
+    Arguments:
+        - coordinates: Atomic 3d coordinates from PDB data.
+    Returns: Returns a 3D vector representing the center of mass of the input coordinates, calculated as the mean value of each coordinate dimension (x, y, z).
+    """
     assert _is_Nx3(coordinates)
-
     return coordinates.mean(axis = 0).reshape(1, 3)
 
 def get_backbone_atoms(atoms: AtomArray) -> AtomArray:
+    """Extracts backbone atoms (CA, N, and C) from an AtomArray.
+    Arguments:
+        - atoms (AtomArray): An array containing atoms of a protein structure.
+    Returns: A filtered array containing only the backbone atoms
+        (CA - alpha carbon, N - nitrogen, and C - carbonyl carbon) from the input.
+    """
     return atoms[(atoms.atom_name == "CA") | (atoms.atom_name == "N") | (atoms.atom_name == "C")]
         
 def distance_to_centroid(coordinates : np.ndarray) -> np.ndarray:
-    """
-    Computing the distances from each of the coordinates to the
-    centroid of all coordinates.
+    """Computing the euclidean distances of the backbone coordinates to the centroid of all coordinates.
+    Argument:
+        - coordinates: Backbone coordinates, distance betweem CA-CA atoms of residues.
+    Returns: A 1D array of Euclidean distances of each point in 'coordinates' to the centroid. Each value represents
+            the distance of a residue from the center of mass, providing a measure of its spatial spread relative to the centroid.
     """
     assert _is_Nx3(coordinates)
     center_of_mass = get_center_of_mass(coordinates)
     dist = coordinates - center_of_mass
-    return np.linalg.norm(dist, axis=-1)  
+    return np.linalg.norm(dist, axis=-1) #calculate the distance along each row of the coordinates  
 
 
 
 class MaximizedGlobularity(Fitness):
-    """
-Calculating the std of the residue backbones from the center of mass,
-lower std indicates a more compact and globular structure.
-    """
+    #Calculating the std of the residue backbones from the center of mass, lower std indicates have more compact and globular structures.
 
     def __init__(self) -> None:
         super().__init__()
         
 
     def Score(self, foldingresult : FoldResult) -> GlobularityScore:
-
-               
+        """Calculating the globularity of proteins based on their spread value from their cwnter of mass.
+        Arguments:
+            - foldingresult: The atomic coordinates prerdicted by ESMFold model
+        Returns: A dataframe consisting of protein sequences and their corresponding compactness values.
+        """
         Globularity_df = pd.DataFrame
         distance = []
         for i in range(len(foldingresult.atoms_df)):
@@ -123,7 +137,7 @@ lower std indicates a more compact and globular structure.
              start2, end2 = (len(monomer_identifiers[0]) +1, len(monomer_identifiers[0])*2)
              backbone2 = get_backbone_atoms(foldingresult.atoms_df["atoms"].iloc[i][np.logical_and(foldingresult.atoms_df["atoms"].iloc[i].res_id  >= start2, foldingresult.atoms_df["atoms"].iloc[i].res_id < end2)]).coord
 
-
+             # Calculate the mean distance of backbone coordinates of each residue from the center of mass, providing a single value that represents the compactness of the protein structure.
              distance.append(np.mean([float(np.std(distance_to_centroid(backbone1))), float(np.std(distance_to_centroid(backbone2)))]))
 
 
@@ -148,19 +162,15 @@ class Filament(Fitness):
   def __init__(self) -> None:
     super().__init__()
 
-
-
-
   def Score(self, foldingresult : FoldResult) -> FilamentDimer:
-    """
-    The multimers should have translational symmetry for each chain.
-    The distance between consecutive chains' center of mass must be equal to their residue backbone distances.
+    """The multimers should have translational symmetry for each chain. The distance between consecutive chains' center of mass must be equal to their residue backbone distances.
+    Arguments: 
+        - foldingresult: Atomic coordinates predicted by ESMFold
+    Returns: A dataframe consisting of proten sequences and their translational symmetry value represented as the standard deviation of the difference between center-of-mass distance and backbone distance between monomers, providing a scalar measure of structural alignment.
     """
     translational_sym = []
     for i in range(len(foldingresult.atoms_df)):
-    #translational symmetry
-    #backbones distance:
-
+    #Calculating translational symmetry as the standard deviatiton of the difference between center-of-mass distance and backbone distance between monomers.
       monomer_identifiers = foldingresult.atoms_df["sequence"].iloc[i].split(":")
       start1, end1 = (1, len(monomer_identifiers[0]))
       backbone1 = get_backbone_atoms(foldingresult.atoms_df["atoms"].iloc[i][np.logical_and(foldingresult.atoms_df["atoms"].iloc[i].res_id  >= start1, foldingresult.atoms_df["atoms"].iloc[i].res_id < end1)]).coord
@@ -195,9 +205,7 @@ def downsample_data(row):
 
 class TotalFitness(Fitness):
 
-    """
-    The defined fitness score classes will be given weights based on the favored importance and then they will be summed together.
-    """
+    #The defined fitness score classes will be given weights based on the favored importance and then they will be summed together.
     def __init__(self) -> None:
         super().__init__()
         self.StructureScore = None
@@ -210,8 +218,14 @@ class TotalFitness(Fitness):
 
 
     def FitnessScore(self, fold_score = StructureScore, globularity_score = GlobularityScore, filament_score = FilamentDimer ) -> OptimizationFitness:
-        #Weights of 1 and 2 respectively for folding and globularity scores are defined.
-        
+        """Computes an overall fitness score for a protein sequence based on structural, globularity, and filament alignment properties.
+        The final FitnessScore is calculated as a linear sum of weighted scores, where the 
+        folding score, globularity score, and filament symmetry score are assigned specific weights 
+        and combined as follows:
+        - The folding score is weighted by 1
+        - The globularity  and filament scores are weighted by 2 and are inversely considered in fitness score funstion, as these scores are std of the distances and their lower values will have bigger inverse values, therefore, more impact on the fitness score.
+        Returns: A datatframe of protein sequences with their corrsponding fitness scores.
+        """
         OptimizationFitness_df = pd.DataFrame()
         OptimizationFitness_df["sequence"] = fold_score.FoldingScore_df["sequence"]
         OptimizationFitness_df["plddt"] = fold_score.FoldingScore_df["plddt"]
