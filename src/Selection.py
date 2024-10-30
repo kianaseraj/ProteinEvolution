@@ -27,7 +27,12 @@ class Select(selection):
         super().__init__()
       
     def KeepFittest(self, score:OptimizationFitness, length_threshold:int) -> MatingPool:
-        #Creating the mating pool composed of 50% of the population having high general fit scores!
+        """Creating the mating pool composed of 50% of the population having high general fit scores!
+        Arguments: 
+            - score: The overall fitness score of each potein sequence obtained by Fitness module
+            -length_threshold: A threshold value for choosing sequences as a parent population, if they are longer than a thershold value.
+        Returns: A dataframe of sequence population as the parent population 
+        """
       
         parent = score.OptimizationFitness_df
         df = parent.sort_values(by = "FitnessScore", ascending = False)
