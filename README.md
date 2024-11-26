@@ -35,7 +35,7 @@ pip install 'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059
 
 **NOTE**: check that `nvcc` is available and that a cuda-compatable version of PyTorch has been installed.
 
-To generate the protein population with the desired properties; here is an example command to run the script with sample arguments:
+To generate the protein population with the desired properties, (number of steps = 100 iterations, sequence length = 200, population size = 50, number of chains in a sequence = 2, path to load the ems model, path to save the generated population); here is an example command to run the script with sample arguments:
 ```bash
 python3 Evolution.py 100 200 50 2 /path/to/save/model /path/to/output/population
 ```
