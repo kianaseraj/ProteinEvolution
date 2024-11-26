@@ -10,22 +10,42 @@ import pandas as pd
 from Selection import MatingPool
 
 
-
 """
 Fifth stage of the algorithm.
 Crossover operaton will be applied on parent population to generate the new sequeces as the children populaiton.
 """
 
 @dataclass
-class Children: #The output object as children population in a dataframe foramt
-    offspring_pop : pd.DataFrame
+class Children: 
+    """
+    Represents the resulting children population after the crossover operation.
+    """
+    offspring_pop : pd.DataFrame #The output object as children population in a dataframe foramt
 
 class Crossover(ABC):
+    """Abstract base class for implementing crossover operations.
+
+    This class defines the interface for performing crossover between parent sequences
+    to produce offspring.
+    """
+
     def __init__(self):
+        """
+        Initializes the Crossover class. 
+        This constructor is empty as this class serves as an abstract interface.
+        """
         pass
 
     @abstractmethod
     def crossover(self, population : MatingPool) :
+        """Abstract method to perform the crossover operation on the given population.
+
+        Arguments:
+        - population (MatingPool): The parent population selected for mating.
+
+        Returns:
+        - Children: The resulting offspring population.
+        """
         pass
 
 
@@ -47,14 +67,15 @@ def domains_from_pae_matrix_networkx(pae_matrix:np.array, pae_power=1, pae_cutof
     Returns: a series of lists, where each list contains the indices of residues belonging to one cluster.
     """
     
-    weights = 1/pae_matrix**pae_power
+    weights = 1/pae_matrix**pae_power    # Compute edge weights as inverse of PAE values
     g = nx.Graph()
     size = weights.shape[0]
     g.add_nodes_from(range(size))
     edges = np.argwhere(pae_matrix<pae_cutoff)
-    sel_weights = weights[edges.T[0], edges.T[1]]
+    sel_weights = weights[edges.T[0], edges.T[1]]   # Select corresponding weights
     wedges = [(i,j,w) for (i,j), w in zip(edges, sel_weights)]
-    g.add_weighted_edges_from(wedges)
+    g.add_weighted_edges_from(wedges)   # Add weighted edges to the graph
+
     clusters = community.greedy_modularity_communities(g, weight = "weight", resolution=graph_resolution)
     return clusters
 
@@ -74,10 +95,10 @@ def swap_sequences(seq1: List[str], plddt1: List[List[float]], seq2: List[str], 
     - new_seq1, new_plddt1, new_seq2, new_plddt2: Swapped sequences and plddt values, the same as the input fomrats
     """
     
-    index1 = random.randint(0, len(seq1) - 1)
+    index1 = random.randint(0, len(seq1) - 1)  # Randomly select a domain from the first sequence
     index2 = random.randint(0, len(seq2) - 1)
     tmp = seq1[index1]
-    seq1[index1] = seq2[index2]
+    seq1[index1] = seq2[index2]# Swap sequences and their corresponding PLDDT values
     seq2[index2] = tmp
 
     tmp = plddt1[index1]
@@ -86,8 +107,62 @@ def swap_sequences(seq1: List[str], plddt1: List[List[float]], seq2: List[str], 
 
     return seq1, plddt1, seq2, plddt2
 
+
+
+
+def process_crossover(
+    seq1: str, seq2: str, plddt1: List[float], plddt2: List[float], pae1: np.array, pae2: np.array):
+    """
+    Helper function to perform crossover on a pair of sequences and their corresponding PLDDT scores.
+
+    Arguments:
+    - seq1, seq2: The protein sequences to be processed.
+    - plddt1, plddt2: Corresponding PLDDT scores for the sequences.
+    - pae1, pae2: PAE matrices for each sequence.
+
+    Returns:
+    - new_seq1, new_plddt1, new_seq2, new_plddt2: The newly swapped sequences and PLDDT scores.
+    """
+    cluster1 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(pae1)]
+    cluster2 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(pae2)]
+
+    domain_specified_seq1 = [
+        "".join(list(seq1)[k] for k in subgroup) for subgroup in cluster1
+    ]
+    domain_specified_seq2 = [
+        "".join(list(seq2)[k] for k in subgroup) for subgroup in cluster2
+    ]
+    plddt_seq1 = [[plddt1[k] for k in subgroup] for subgroup in cluster1]
+    plddt_seq2 = [[plddt2[k] for k in subgroup] for subgroup in cluster2]
+
+    new_seq1, new_plddt1, new_seq2, new_plddt2 = swap_sequences(
+        domain_specified_seq1.copy(),
+        plddt_seq1.copy(),
+        domain_specified_seq2.copy(),
+        plddt_seq2.copy(),
+    )
+
+    new_seq1 = "".join(val for sublist in new_seq1 for val in sublist)
+    new_seq2 = "".join(val for sublist in new_seq2 for val in sublist)
+    new_plddt1 = [value for sublist in new_plddt1 for value in sublist]
+    new_plddt2 = [value for sublist in new_plddt2 for value in sublist]
+
+    return new_seq1, new_plddt1, new_seq2, new_plddt2
+
+
+
+
 class DomainCrossover(Crossover):
+    """Implements the crossover operation by swapping domains between parent sequences.
+
+    This class performs crossover to generate new offspring sequences and combines them 
+    with the parent population to form the next generation.
+    """
+    
     def __init__(self):
+        """
+        Initializes the DomainCrossover class.
+        """
         super().__init__()
 
 
@@ -101,45 +176,30 @@ class DomainCrossover(Crossover):
         """
  
         #New sequecnes and their corresponding plddt scores will be stored in the lists
-        NewSeq = []
+        NewSeq = []  
         NewPlddt = []
         # Iterate through dataframes' sequences in pairs
-        for i in range(0, len(population.fittest_pop), 2):
-            if i < len(population.fittest_pop) - 1:
-                cluster1 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(population.fittest_pop["pae"].iloc[i])]
-                cluster2 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(population.fittest_pop["pae"].iloc[i + 1])]
-                domain_specified_seq1 = ["".join(list(population.fittest_pop["sequence"].iloc[i])[k] for k in subgroup) for subgroup in cluster1] #the sequence will be a list composed of its seperated domains
-                domain_specified_seq2 = ["".join(list(population.fittest_pop["sequence"].iloc[i+1])[k] for k in subgroup) for subgroup in cluster2]
-                plddt_seq1 = [[population.fittest_pop["plddt"].iloc[i][k]for k in subgroup] for subgroup in cluster1]#the domains' coresponding plddt scores will be separated in a list form to be swapt by swap_sequences function
-                plddt_seq2 = [[population.fittest_pop["plddt"].iloc[i+1][k]for k in subgroup] for subgroup in cluster2]
-                new_seq1, new_plddt1, new_seq2, new_plddt2 = swap_sequences(domain_specified_seq1.copy(), plddt_seq1.copy(), domain_specified_seq2.copy(), plddt_seq2.copy())
+       
+        for i in range(len(population.fittest_pop)):
+            # Identify the second sequence for crossover
+            partner_index = (i + 1) % len(population.fittest_pop)
 
-                #converting the list of domains into a string again
-                new_seq1 = ''.join(val for sublist in new_seq1 for val in sublist)
-                new_seq2 = ''.join(val for sublist in new_seq2 for val in sublist)
-                new_plddt1 = [value for sublist in new_plddt1 for value in sublist]
-                new_plddt2 = [value for sublist in new_plddt2 for value in sublist]
+            # Extract data for the pair
+            seq1 = population.fittest_pop["sequence"].iloc[i]
+            seq2 = population.fittest_pop["sequence"].iloc[partner_index]
+            plddt1 = population.fittest_pop["plddt"].iloc[i]
+            plddt2 = population.fittest_pop["plddt"].iloc[partner_index]
+            pae1 = population.fittest_pop["pae"].iloc[i]
+            pae2 = population.fittest_pop["pae"].iloc[partner_index]
 
-            else:
-                #for a population with odd number os sequences, the last sequence's domains are swapt with the first sequence
-                cluster1 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(population.fittest_pop["pae"].iloc[i])]
-                cluster2 = [list(frozenset) for frozenset in domains_from_pae_matrix_networkx(population.fittest_pop["pae"].iloc[0])]
-                domain_specified_seq1 = ["".join(list(population.fittest_pop["sequence"].iloc[i])[k] for k in subgroup) for subgroup in cluster1]
-                domain_specified_seq2 = ["".join(list(population.fittest_pop["sequence"].iloc[0])[k] for k in subgroup) for subgroup in cluster2]
-                plddt_seq1 = [[population.fittest_pop["plddt"].iloc[i][k]for k in subgroup] for subgroup in cluster1]
-                plddt_seq2 = [[population.fittest_pop["plddt"].iloc[0][k]for k in subgroup] for subgroup in cluster2]
-                new_seq1, new_plddt1, new_seq2, new_plddt2 = swap_sequences(domain_specified_seq1.copy(), plddt_seq1.copy(), domain_specified_seq2.copy(), plddt_seq2.copy())
+            # Perform crossover
+            new_seq1, new_plddt1, new_seq2, new_plddt2 = process_crossover(
+                seq1, seq2, plddt1, plddt2, pae1, pae2
+            )
 
+            NewSeq.extend([new_seq1, new_seq2])
+            NewPlddt.extend([new_plddt1, new_plddt2])
 
-                new_seq1 = ''.join(val for sublist in new_seq1 for val in sublist)
-                new_seq2 = ''.join(val for sublist in new_seq2 for val in sublist)
-                new_plddt1 = [value for sublist in new_plddt1 for value in sublist]
-                new_plddt2 = [value for sublist in new_plddt2 for value in sublist]
-
-            NewSeq.append(new_seq1)
-            NewSeq.append(new_seq2)
-            NewPlddt.append(new_plddt1)
-            NewPlddt.append(new_plddt2)
 
         #returning children and parent population as a new population of protein sequences!
         offspring = pd.DataFrame({"sequence" : NewSeq, "plddt" : NewPlddt})
