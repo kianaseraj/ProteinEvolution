@@ -5,29 +5,30 @@ This project explores the capacity of ESM and ESMFold to simulate protein sequen
 
 
 **Overview of the Methodology**
+
 The simulation begins with an initial population of randomly generated protein sequences, which, when passed through ESMFold, lack significant structural features. A Genetic Algorithm is then employed to optimize this population iteratively.
 
 **Step-by-Step Process**
 
-###Initialization:
+***Initialization:***
 Start with a randomly generated population of protein sequences.
 Use ESMFold to predict the structure and assess initial structural properties (e.g., pLDDT scores).
 
-###Fitness Evaluation:
+***Fitness Evaluation:***
 Assign a fitness score to each sequence based on how well its structure aligns with the desired constraints.
 Structural fitness is evaluated using metrics like pLDDT scores and backbone accuracy.
 
-###Selection:
+***Selection:***
 Identify high-fitness sequences as parent populations for the next generation.
 
-###Crossover:
+***Crossover:***
 Exchange domains between parent sequences to generate a new set of offspring (children population).
 
-###Mutation:
+***Mutation:***
 Substitute up to 5% of the amino acids in the offspring using ESM model logits.
 Mask amino acids with lower pLDDT scores and replace them with higher-confidence predictions from the ESM model.
 
-###Iteration:
+***Iteration:***
 Combine the parent population with the newly generated sequences and repeat the process.
 Iteratively optimize the population towards sequences with high pLDDT scores and structural integrity (e.g., filament dimer shapes).
 
