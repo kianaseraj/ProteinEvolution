@@ -4,10 +4,14 @@ import random
 from Breeding import domains_from_pae_matrix_networkx, swap_sequences
 
 
-random.seed(42)
 
 @pytest.fixture
 def pae_matrix():
+  
+    """Fixture that provides a sample PAE matrix for testing purposes.
+    Returns:
+        -np.ndarray: A 10x10 numpy array representing the PAE matrix.
+    """
     return np.array([[ 0.2553455 ,  2.1096013 ,  4.3020062 ,  6.0023804 ,  5.70045   ,
          5.0911565 ,  7.6306534 ,  8.57113   ,  8.941341  , 10.038839  ],
        [ 1.0851111 ,  0.25086007,  1.3389152 ,  2.1682181 ,  2.9111462 ,
@@ -29,15 +33,34 @@ def pae_matrix():
        [ 4.122622  ,  3.0157313 ,  1.6225138 ,  1.2238846 ,  1.0305163 ,
          0.8540813 ,  0.8364479 ,  0.81597555,  0.758469  ,  0.25004017]])
 
-#Testing domains_from_pae_matrix_networkx function; if the function has all the elements of pae matrix in its clusters
+
 def test_all_indices_in_clusters(pae_matrix):
+  
+     """Test domains_from_pae_matrix_networkx function to ensure all indices from the PAE matrix are present in the clusters.
+    
+     Arguments:
+        -pae_matrix (np.ndarray): A numpy array representing the PAE matrix.
+    
+     Raises:
+        AssertionError: If not all indices are present in the output clusters.
+     """
+  
      indices = [index for sublist in domains_from_pae_matrix_networkx(pae_matrix) for index in sublist]
 
       # Check that all indices from 0 to fittest_pop.shape[0] - 1 are in l
      assert all(i in indices for i in range(pae_matrix.shape[0])), "Not all indices are present in the list"
 
-#Testing swap_sequences function; if the new sequences and their corresponding plddts have the same length
+
 def test_swapt_sequences_equality():
+  
+   """Test swap_sequences function to ensure that the new sequences and their corresponding PLDDTs have the same length.
+
+   Raises:
+        AssertionError: If the length of the new sequences does not match the length of their respective PLDDT lists.
+   """
+  
+   #Set the random seed for reproducibility in tests
+   random.seed(42)
    seq1 = ['SMGGGGSLISAANNPSLKAAAPQ', 'AALRQVASLNG']
    plddt1 = [[88.4260816334587, 4.650702452297506, 22.439318656160356, 98.14087555247572, 95.54523051691886, 11.610893507247166, 73.7323068694926, 21.048009795821244, 27.517503749892967, 8.495394742415485, 19.086089467691934, 75.78823382952324, 82.39451869813249, 87.31708825818109, 20.00950041059464, 87.14546712226186, 86.48439035638037, 66.82728902459367, 46.389505774015596, 56.04638199141105, 77.10669772677534, 29.799339667694056, 55.358220221662336], [99.66853727614678, 33.94351840354507, 55.4277466101775, 52.71269198078736, 12.382873576996822, 84.79681883524619, 87.00542357974008, 71.58190777477301, 13.907540844441668, 50.1070753890187, 14.882769613351133]]
    seq2 = ['TLIFACENDSIAPVN', 'SRNAKQFLEINGGSHSC']
