@@ -20,26 +20,67 @@ The folding score results will be in pandas dataframe format.
 """
 @dataclass
 class FoldResult:
-    ptm_df : pd.DataFrame
-    mean_plddt_df : pd.DataFrame
-    plddt_df : pd.DataFrame
-    pae_df : pd.DataFrame
-    atoms_df : pd.DataFrame
+    """Represents the result of a protein folding prediction.
+    This class encapsulates various dataframes that store the outcomes of a folding process,
+    including confidence scores, structural information, and atomic coordinates.
+    """
+    
+    ptm_df: pd.DataFrame       # Stores global confidence scores for domain arrangement (pTM scores)
+    mean_plddt_df: pd.DataFrame  # Contains mean per-residue confidence scores (mean pLDDT)
+    plddt_df: pd.DataFrame      # Provides detailed per-residue confidence scores (pLDDT)
+    pae_df: pd.DataFrame        # Contains pairwise confidence errors (PAE values)
+    atoms_df: pd.DataFrame      # Stores atomic coordinates and associated structural data
 
 class Predictor(ABC):
-
+    """
+    Abstract base class for implementing prediction models.
+    This class defines the interface for loading a model and folding protein sequences.
+    """
     def __init__(self) -> None:
+        """
+        Initialize the Predictor class.
+        This constructor does not take any parameters or perform any specific actions.
+        """
         pass
 
     @abstractmethod
     def load(self, dir_path : str) -> None:
+        """Load the prediction model from the specified directory.
+
+        Arguments:
+        - dir_path (str): The path to the directory containing the prediction model files.
+        
+        Raises:
+        - NotImplementedError: If the method is not implemented in a subclass.
+        """
         pass
     @abstractmethod
     def fold(self, Population : List[str] ) -> FoldResult:
+        """Perform folding on a population of protein sequences.
+
+        Arguments:
+        - Population (List[str]): A list of protein sequences represented as strings.
+
+        Returns:
+        - FoldResult: An object containing the folding results, including structural data and scores.
+
+        Raises:
+        - NotImplementedError: If the method is not implemented in a subclass.
+        """
         pass
 
 
 def pdb_file_to_atomarray(pdb_path = Union[str,StringIO]) -> AtomArray:
+    
+    """Convert a PDB file into an AtomArray.
+
+    Arguments:
+    - pdb_path (Union[str, StringIO]): The file path to the PDB file or a StringIO object 
+      containing the PDB data.
+
+    Returns:
+    - AtomArray: An AtomArray object representing the atomic structure from the PDB file.
+    """
     return PDBFile.read(pdb_path).get_structure(model = 1)
 
 
@@ -98,8 +139,17 @@ class ESMFold(Predictor):
 
 
 class ESMmodel(Predictor):
+    """
+    Implements the Predictor abstract base class using the ESM2 model for sequence-based predictions.
+    The model can predict masked amino acids in protein sequences and is equipped for folding tasks.
+    """
     
     def __init__(self) -> None:
+        """
+        Initializes an ESMmodel instance.
+        This includes placeholders for the ESM2 model and its tokenization module (alphabet).
+        """
+
         super().__init__()
         self.model = None
         self.alphabet = None
@@ -114,6 +164,7 @@ class ESMmodel(Predictor):
         self.model, self.alphabet = esm.pretrained.esm2_t33_650M_UR50D() #Load the model and alphabet module. alphabt module will be used to tokenize squence inputs
         self.model.eval() #Set the model to evaluation mode
         return self.model, self.alphabet
-
+    
+    #the fold method is not required in this subcass
     def fold(self, sequence : str) -> FoldResult:
         pass
