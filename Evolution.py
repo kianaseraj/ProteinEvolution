@@ -1,6 +1,6 @@
 from Individual import GeneratingPopulation
 from Folding import Predictor
-from Fitness import Fitness
+from Fitness import filament_score, maximizedglobularity_score, folding_score, total_fitness_score
 from Selection import Select
 from Breeding import DomainCrossover
 from Mutation import MaskedMutation
@@ -10,6 +10,13 @@ import logging
 
 
 def create_parser():
+    """
+    Creates an argument parser for configuring the evolutionary scenario.
+
+    Returns:
+    - argparse.ArgumentParser: A parser to handle command-line arguments.
+    """
+
     parser = argparse.ArgumentParser(description = "Generating protein population")
     
     parser.add_argument("num_steps", 
@@ -40,7 +47,10 @@ def create_parser():
     
     
 class EvolutionScenario:
-
+    
+    """
+    Simulates the evolutionary process for generating protein sequences with improved properties.
+    """
 
     def __init__(self, chain_num: int, num_sequence: int, length: int , dir_path: str, population_path: str ):
         
@@ -57,6 +67,7 @@ class EvolutionScenario:
         
         #stage1: initializing the input population with randomely generated sequences.
         self.proteins = GeneratingPopulation(chain_num, num_sequence, length)
+        # Load models for folding and mutation
         self.folding_model = Predictor.ESMFold.load(dir_path)
         self.mut_model, self.mut_alphabet = Predictor.ESMmodel.load(dir_path)
         self.length = length
@@ -79,21 +90,14 @@ class EvolutionScenario:
             FoldResult = self.folding_model.fold(population)
 
             #stage3 : Calculating the structural confidence score of sequences.
-            score1 = Fitness.FoldingFitness() 
-            StructureScore = score1.Score(FoldResult)
-
-            score2 = Fitness.MaximizedGlobularity() 
-            GlobularityScore = score2.Score(FoldResult)
-
-            fitness = Fitness.TotalFitness()
-          
-            if self.chain_num >= 2:
-              score3 = Fitness.Filament()
-              FilamentDimer = score3.Score(FoldResult)
-              OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore, FilamentDimer)
-
+            StructureScore = folding_score(FoldResult)
+            GlobularityScore = maximizedglobularity_score(FoldResult)
+            FilamentDimer = filament_score(FoldResult)
+            
+            if self.chain_num >= 2:  #for more than one chian of sequence, filament score is also considered.
+              OptimizationFitness = total_fitness_score(StructureScore, GlobularityScore, FilamentDimer)
             else:
-              OptimizationFitness = fitness.FitnessScore(StructureScore, GlobularityScore)
+              OptimizationFitness = total_fitness_score(StructureScore, GlobularityScore)
 
               
             #stage4 : Selection operation; sequences having high general structural scores will be selected.
@@ -104,7 +108,7 @@ class EvolutionScenario:
             breed = DomainCrossover()
             Children = breed.crossover(MatingPool)
 
-            #stage5 : Mutation with the masked prediction task; 3% of the amino acids of a sequence having the lowest plddt values will be covered and substituted with residues pedicted by ESM model to have high logit values
+            #stage6 : Mutation with the masked prediction task; 3% of the amino acids of a sequence having the lowest plddt values will be covered and substituted with residues pedicted by ESM model to have high logit values
             mutating = MaskedMutation(self.mut_model, self.mut_alphabet, self.length)
             MutatedChildren = mutating.mutate(Children)
             population = MutatedChildren #The final population, and the input for the subsequent iteration
