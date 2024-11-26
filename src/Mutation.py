@@ -38,8 +38,12 @@ def insertion(seq: str, length: int):
         -length: a desired length to have after insertion
     Returns: A mutated sequence with the desired length
     """
-    domain_length = length - len(seq) #length differnce between the chosen sequence and the desired length after mutation, the difference value will be used later to generate a domain
-    insertion_position = random.randint(0, len(seq)) #randomly choosing a positoin to insert the domain
+    
+    #length differnce between the chosen sequence and the desired length after mutation, the difference value will be used later to generate a domain
+    domain_length = length - len(seq) 
+    #randomly choosing a positoin to insert the domain
+    insertion_position = random.randint(0, len(seq)) 
+    # Create the mutated sequence with the inserted domain
     mutated_seq = seq[:insertion_position] + GeneratingDomain(domain_length, amino_acid) + seq[insertion_position:]
     return mutated_seq
 
@@ -53,14 +57,16 @@ def esm_log_probability(seq, masked_position, mut_model, mut_alphabet):
         - mut_alphabet: ESM's tokenization module to tokenize the seuqnces as inputs for the subsequent inferece task by a langugae model
     Returns: A log probability values for each token of the sequence will be generated.
     """
-    
+    # Prepare the batch using the ESM alphabet batch converter
     batch_converter = mut_alphabet.get_batch_converter()
     data = [("seq", seq)] #The required input format of a sequence to be tokenized by the model
     _ , _ , batch_tokens = batch_converter(data) #Tokenizing the sequence
+    # Mask the specified position
     batch_tokens[0][masked_position] = mut_alphabet.mask_idx
     with torch.no_grad():
         results = mut_model(batch_tokens, repr_layers=[33], return_contacts=False)
     logits = results["logits"]#Extract the logit values of the neural network
+    # Apply softmax and log transformation to get probabilities
     probabilities = torch.nn.functional.softmax(logits[0][masked_position], dim=1) #softmax transformation of the logits to get probability values
     log_probabilities = torch.log(probabilities)
     return log_probabilities
@@ -97,7 +103,20 @@ def substitution(seq, plddt, mut_model, mut_alphabet):
 
 
 class Mutation(ABC):
+    """
+    Abstract base class defining the interface for mutation operations.
+
+    This class serves as a blueprint for implementing specific mutation strategies
+    to introduce variability in the population.
+    """
     def __init__(self, model, model_alphabet, seq_length):
+        """Initializes the Mutation class.
+
+        Arguments:
+        - model: The ESM model used for mutation operations.
+        - model_alphabet: The ESM alphabet used for tokenizing sequences.
+        - seq_length (int): The length threshold for sequences, used in insertion operations.
+        """
         self.model = model
         self.alphabet = model_alphabet
         self.length = seq_length
@@ -105,11 +124,32 @@ class Mutation(ABC):
         
     @abstractmethod
     def mutate(self, Individuals) -> List[str]:
+        """Abstract method to define the mutation operation.
+
+        Arguments:
+        - Individuals: A population of protein sequences.
+
+        Returns:
+        - List[str]: A list of mutated sequences.
+        """
         pass
 
 class MaskedSubstitution(Mutation):
+    """
+    Implements the Mutation class with masked substitution and insertion operations.
+
+    The mutation strategy involves substituting low-confidence residues (low PLDDT scores) 
+    and inserting randomly generated domains for sequences shorter than a specified threshold.
+    """
 
     def __init__(self, model, model_alphabet, length):
+        """Initializes the MaskedSubstitution class.
+
+        Arguments:
+        - model: The ESM model used for mutation operations.
+        - model_alphabet: The ESM alphabet used for tokenizing sequences.
+        - length (int): The length threshold for sequences, used in insertion operations.
+        """
         super().__init__(model, model_alphabet, length)
 
     def mutate(self, Individuals) -> List[str]:
@@ -134,7 +174,7 @@ class MaskedSubstitution(Mutation):
               mutated_seq = insertion(seq)
           else:
               mutated_seq = seq
-
+          # Duplicate the mutated sequence for both chains and join with ":"
           mutated_seqs = ":".join([mutated_seq]*2)
           MutatedChildren.append(mutated_seqs)
 
