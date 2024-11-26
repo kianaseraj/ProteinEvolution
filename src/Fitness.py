@@ -17,29 +17,8 @@ Each individual sequence in the population is evaluated using these fitness crit
 A total fitness score is calculated for each sequence, which determines its survival
 probability in the subsequent evolution process.
 """
-def create_structure_score(folding_score_df: pd.DataFrame) -> dict:
-    """Folding score in a dictionary format
-    """
-    return {"FoldingScore_df": folding_score_df}
-
-
-def create_globularity_score(globularity_df: pd.DataFrame) -> dict:
-    """Globularity score in a dictionary format
-    """
-    return {"Globularity_df": globularity_df}
-
-def create_filament_dimer(translational_sym_df: pd.DataFrame) -> dict:
-    """Filament score in a dictionary format
-    """
-    return {"translational_sym_df": translational_sym_df}
-
-def create_optimization_fitness(optimization_fitness_df: pd.DataFrame) -> dict:
-    """Total score in a dictionary format
-    """
-    return {"OptimizationFitness_df": optimization_fitness_df}
-
         
-    
+   
 def score_folding(foldingresult: FoldResult) -> dict:
     """Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear weighted sum of mean plddt, mean pae, and ptm scores.
     Arguments: 
@@ -58,7 +37,7 @@ def score_folding(foldingresult: FoldResult) -> dict:
         + foldingresult.ptm_df["ptm"] * 100
         + -1 * foldingresult.pae_df.apply(lambda row: np.mean(row["pae"]), axis=1)
     )
-    return create_structure_score(FoldingScore_df)
+    return FoldingScore_df
     
 
   
@@ -135,7 +114,7 @@ def maximizedglobularity_score(foldingresult : FoldResult) -> dict:
         
         Globularity_df = pd.DataFrame({"sequence" : foldingresult.ptm_df["sequence"], "distance_to_centroid" : distance})
         
-        return create_globularity_score(Globularity_df)
+        return Globularity_df
 
     
  
@@ -167,7 +146,7 @@ def filament_score(foldingresult : FoldResult) -> dict:
 
     translational_sym_df = pd.DataFrame({"Sequence": foldingresult.atoms_df["sequence"], "TranslationalSummetry" : translational_sym })
 
-    return create_filament_dimer(translational_sym_df)
+    return translational_sym_df
 
 
 
@@ -213,4 +192,4 @@ def total_fitness_score(fold_score , globularity_score , filament_score ) -> dic
            OptimizationFitness_df["FitnessScore"] = ((fold_score.FoldingScore_df["GeneralScore"])/100) + 2 * 1/((globularity_score.Globularity_df["distance_to_centroid"]) + ((np.e) ** -6))
 
 
-        return create_optimization_fitness(OptimizationFitness_df)   
+        return OptimizationFitness_df
