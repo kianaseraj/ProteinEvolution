@@ -10,73 +10,66 @@ from Folding import FoldResult
 
 """
 Third stage of the algorithm.
-Various fitness classes such as globularity, folding and filament have been defiend using the obtained structural scores from Folding module.
+Various fitness functions such as globularity, folding and filament have been defiend using the obtained structural scores from Folding module.
 The defined fitness scores drive the population towards desired structural properties over successive generations.
 
 Each individual sequence in the population is evaluated using these fitness criteria.
 A total fitness score is calculated for each sequence, which determines its survival
 probability in the subsequent evolution process.
 """
-@dataclass
-class StructureScore:
-    FoldingScore_df : pd.DataFrame
-
-@dataclass
-class GlobularityScore:
-    Globularity_df : pd.DataFrame
-
-@dataclass
-class FilamentDimer:
-    translational_sym_df : pd.DataFrame
-
-@dataclass
-class OptimizationFitness:
-    OptimizationFitness_df : pd.DataFrame
-
-    
-class Fitness(ABC):
-
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def Score(self, foldingresult : FoldResult) -> StructureScore:
-        pass
-
-    @abstractmethod
-    def FitnessScore(self, *scores) -> OptimizationFitness:
-        pass
+def create_structure_score(folding_score_df: pd.DataFrame) -> dict:
+    """Folding score in a dictionary format
+    """
+    return {"FoldingScore_df": folding_score_df}
 
 
-class FoldingFitness(Fitness):
-    def __init__(self):
-        super().__init__()
+def create_globularity_score(globularity_df: pd.DataFrame) -> dict:
+    """Globularity score in a dictionary format
+    """
+    return {"Globularity_df": globularity_df}
+
+def create_filament_dimer(translational_sym_df: pd.DataFrame) -> dict:
+    """Filament score in a dictionary format
+    """
+    return {"translational_sym_df": translational_sym_df}
+
+def create_optimization_fitness(optimization_fitness_df: pd.DataFrame) -> dict:
+    """Total score in a dictionary format
+    """
+    return {"OptimizationFitness_df": optimization_fitness_df}
+
         
-
-    def Score(self, foldingresult: FoldResult) -> StructureScore:
-        """Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear weighted sum of mean plddt, mean pae, and ptm scores.
-        Arguments: 
-        - foldingresult : The strucural scores obtained by ESMFold by Folding module
-        Returns: A dataframe of protein sequences with their fitness scores
-        """   
-        assert FoldResult is not None
-        FoldingScore_df = pd.DataFrame()
-        FoldingScore_df["sequence"] = foldingresult.ptm_df["sequence"]   
-        FoldingScore_df["plddt"] = foldingresult.plddt_df["plddt"]
-        FoldingScore_df["ptm"] = foldingresult.ptm_df["ptm"]*100
-        FoldingScore_df["pae"] = foldingresult.pae_df["pae"]
-        FoldingScore_df["mean_plddt"] = foldingresult.mean_plddt_df['mean_plddt']
-        FoldingScore_df["GeneralScore"] = foldingresult.mean_plddt_df["mean_plddt"] + foldingresult.ptm_df["ptm"]*100 + -1*foldingresult.pae_df.apply(lambda row: np.mean(row["pae"]), axis=1) 
-       
-        return StructureScore(FoldingScore_df)
     
-
-    def FitnessScore(self) -> OptimizationFitness:
-        pass
+def score_folding(foldingresult: FoldResult) -> dict:
+    """Storing folding result scores from ESM in dataframe format and define a general fitness score as a linear weighted sum of mean plddt, mean pae, and ptm scores.
+    Arguments: 
+        - foldingresult : The strucural scores obtained by ESMFold by Folding module
+    Returns: A dataframe of protein sequences with their fitness scores
+    """ 
+    assert FoldResult is not None
+    FoldingScore_df = pd.DataFrame()
+    FoldingScore_df["sequence"] = foldingresult.ptm_df["sequence"]   
+    FoldingScore_df["plddt"] = foldingresult.plddt_df["plddt"]
+    FoldingScore_df["ptm"] = foldingresult.ptm_df["ptm"] * 100
+    FoldingScore_df["pae"] = foldingresult.pae_df["pae"]
+    FoldingScore_df["mean_plddt"] = foldingresult.mean_plddt_df['mean_plddt']
+    FoldingScore_df["GeneralScore"] = (
+        foldingresult.mean_plddt_df["mean_plddt"]
+        + foldingresult.ptm_df["ptm"] * 100
+        + -1 * foldingresult.pae_df.apply(lambda row: np.mean(row["pae"]), axis=1)
+    )
+    return create_structure_score(FoldingScore_df)
+    
 
   
 def _is_Nx3(array : np.ndarray) -> bool:
+    """Checks if the input NumPy array is a 2D array with exactly 3 columns.
+    Arguments: 
+        -array : A NumPy array to be checked.
+    Returns : bool; True if the input array is a 2D array with 3 columns, otherwise False.
+    """
     return len(array.shape) == 2 and array.shape[1] == 3
+
     
 def get_center_of_mass(coordinates : np.ndarray) -> np.ndarray:
     """Calculate the center of mass of coordinates in each dimension.
@@ -109,15 +102,7 @@ def distance_to_centroid(coordinates : np.ndarray) -> np.ndarray:
     return np.linalg.norm(dist, axis=-1) #calculate the distance along each row of the coordinates  
 
 
-
-class MaximizedGlobularity(Fitness):
-    #Calculating the std of the residue backbones from the center of mass, lower std indicates have more compact and globular structures.
-
-    def __init__(self) -> None:
-        super().__init__()
-        
-
-    def Score(self, foldingresult : FoldResult) -> GlobularityScore:
+def maximizedglobularity_score(foldingresult : FoldResult) -> dict:
         """Calculating the globularity of proteins based on their spread value from their cwnter of mass.
         Arguments:
             - foldingresult: The atomic coordinates prerdicted by ESMFold model
@@ -150,19 +135,11 @@ class MaximizedGlobularity(Fitness):
         
         Globularity_df = pd.DataFrame({"sequence" : foldingresult.ptm_df["sequence"], "distance_to_centroid" : distance})
         
-        return GlobularityScore(Globularity_df)
+        return create_globularity_score(Globularity_df)
 
     
-    def FitnessScore(self) -> OptimizationFitness:
-        pass
-
-
-class Filament(Fitness):
-
-  def __init__(self) -> None:
-    super().__init__()
-
-  def Score(self, foldingresult : FoldResult) -> FilamentDimer:
+ 
+def filament_score(foldingresult : FoldResult) -> dict:
     """The multimers should have translational symmetry for each chain. The distance between consecutive chains' center of mass must be equal to their residue backbone distances.
     Arguments: 
         - foldingresult: Atomic coordinates predicted by ESMFold
@@ -190,34 +167,23 @@ class Filament(Fitness):
 
     translational_sym_df = pd.DataFrame({"Sequence": foldingresult.atoms_df["sequence"], "TranslationalSummetry" : translational_sym })
 
-    return FilamentDimer(translational_sym_df = translational_sym_df)
+    return create_filament_dimer(translational_sym_df)
 
-    
-  def FitnessScore(self) -> OptimizationFitness:
-    pass
 
 
 def downsample_data(row):
+    """Adjusts the lengths of the plddt and pae fields in a row of data based on the length of the sequence provided in the row
+    Arguments: 
+        - row: A dictionary-like object containing sequeence, plddt, and pae keys.
+    Returns: The updated row with truncated "plddt" and "pae" fields.
+    """
     seq_length = len(row["sequence"])
     row['plddt'] = row['plddt'][:seq_length]
     row["pae"] = row["pae"][0][:seq_length, :seq_length]
     return row
 
-class TotalFitness(Fitness):
 
-    #The defined fitness score classes will be given weights based on the favored importance and then they will be summed together.
-    def __init__(self) -> None:
-        super().__init__()
-        self.StructureScore = None
-        self.GlobularityScore = None
-        self.FilamentDimer = None 
-
-        
-    def Score(self, foldingresult : FoldResult) -> StructureScore:
-        pass
-
-
-    def FitnessScore(self, fold_score = StructureScore, globularity_score = GlobularityScore, filament_score = FilamentDimer ) -> OptimizationFitness:
+def total_fitness_score(fold_score , globularity_score , filament_score ) -> dict:
         """Computes an overall fitness score for a protein sequence based on structural, globularity, and filament alignment properties.
         The final FitnessScore is calculated as a linear sum of weighted scores, where the 
         folding score, globularity score, and filament symmetry score are assigned specific weights 
@@ -247,4 +213,4 @@ class TotalFitness(Fitness):
            OptimizationFitness_df["FitnessScore"] = ((fold_score.FoldingScore_df["GeneralScore"])/100) + 2 * 1/((globularity_score.Globularity_df["distance_to_centroid"]) + ((np.e) ** -6))
 
 
-        return OptimizationFitness(OptimizationFitness_df = OptimizationFitness_df)    
+        return create_optimization_fitness(OptimizationFitness_df)   
